@@ -11,6 +11,10 @@ integration yet.
 Furthermore, the WifiManager library is used for on-the-fly configuration.
 
 
+If you're looking for the exact opposite of this, check out [esp8266-deerma-humidifier](https://github.com/Hypfer/esp8266-deerma-humidifier/).
+Or maybe even use both simultaneously and see who wins?
+
+
 This should work with all wifi-enabled Midea-made dehumidifiers. They are sold under different brands including:
 * Comfee
 * Inventor
