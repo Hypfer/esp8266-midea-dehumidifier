@@ -1,4 +1,7 @@
-# esp8266-midea-dehumidifier
+<div align="center">
+    <img src="https://github.com/Hypfer/esp8266-midea-dehumidifier/blob/master/img/logo.svg" width="800" alt="esp8266-midea-dehumidifier">
+    <p align="center"><h2>Free your dehumidifier from the cloud</h2></p>
+</div>
 
 This repo contains software to build a replacement wifi adapter for your wifi-enabled midea dehumidifier
 which enables cloud-free operation utilizing MQTT.
