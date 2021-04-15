@@ -33,6 +33,7 @@ This means an alternative is to hook up directly to this serial interface and by
 This list contains all tested and known-working dehumidifiers:
 
 * Comfee MDDF-20DEN7-WF
+* Inventor Eva II PRO WI-FI
 
 ## Health and Safety
 Please note that some of the supported dehumidifiers such as the Comfee MDDF-20DEN7-WF use R290 as its coolant which - [while having a much lower global warming potential than other coolants](https://en.wikipedia.org/wiki/Refrigerant#Environmental_issues) -
