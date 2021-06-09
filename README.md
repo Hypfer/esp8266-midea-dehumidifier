@@ -9,6 +9,7 @@ which enables cloud-free operation utilizing MQTT.
 Home Assistant Autodiscovery is supported, albeit not including the `humidifier` part, since there's no `humidifier.mqtt`
 integration yet.
 Furthermore, the WifiManager library is used for on-the-fly configuration.
+Also, ArduinoOTA is used, so that firmware updates are possible even with a reassembled device.
 
 
 If you're looking for the exact opposite of this, check out [esp8266-deerma-humidifier](https://github.com/Hypfer/esp8266-deerma-humidifier/).
@@ -69,6 +70,7 @@ For this, you will need to add ESP8266 support to it by [using the Boards Manage
 
 Furthermore, you will also need to install the following libraries using the Library Manager:
 
+* ArduinoOTA 1.0.3
 * ArduinoJSON 6.10.1
 * PubSubClient 2.8.0
 * WiFiManager 0.15.0
@@ -96,12 +98,12 @@ This also deletes the config and opens up the initial configuration Access Point
 ### Controlling the Appliance
 Since we're using the Home Assistant Autodiscovery feature, everything should just work™.
 
-Do note that as of Home Assistant 0.115 there's no `humidifier.mqtt` component, which means, that you will only be able
-to control the fan speed using the automatically discovered entities.
+Do note that as of Home Assistant 0.115 there's no `humidifier.mqtt` component, which means, that control is done by
+having multiple `fan.mqtt` entities (Fan Speed, Mode, Setpoint).
 
-This will hopefully change very soon.
+This will hopefully change in the future.
 
-Until then as well as if you're using something else than Home Assistant, you can of course control it by manually sending
+Until then as well as if you're using something else than Home Assistant, you can of course also control it by manually sending
 JSONs to the command mqtt topic of the unit:
 ```
 esp8266-midea-dehumidifier/DEHUMIDIFIER-FFFFFF/command

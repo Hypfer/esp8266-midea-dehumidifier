@@ -7,6 +7,8 @@
 #include <ArduinoJson.h>
 #include <WiFiManager.h>
 #include <PubSubClient.h>
+//#include <SoftwareSerial.h>
+#include <ArduinoOTA.h>
 
 dehumidifierState_t state;
 
@@ -37,8 +39,17 @@ char MQTT_TOPIC_AVAILABILITY[128];
 char MQTT_TOPIC_STATE[128];
 char MQTT_TOPIC_COMMAND[128];
 
+char MQTT_TOPIC_AUTOCONF_WIFI_SENSOR[128];
 char MQTT_TOPIC_AUTOCONF_HUMIDITY_SENSOR[128];
+
+
+char MQTT_TOPIC_AUTOCONF_POWER_SWITCH[128];
 char MQTT_TOPIC_AUTOCONF_FAN[128];
+//TODO: replace when HA gains a better mqtt component for these
+char MQTT_TOPIC_AUTOCONF_MODE[128];
+char MQTT_TOPIC_AUTOCONF_SETPOINT[128];
+
+
 
 
 bool shouldSaveConfig = false;
@@ -68,14 +79,20 @@ void setup() {
   snprintf(MQTT_TOPIC_COMMAND, 127, "%s/%s/command", FIRMWARE_PREFIX, identifier);
 
   snprintf(MQTT_TOPIC_AUTOCONF_HUMIDITY_SENSOR, 127, "homeassistant/sensor/%s/%s_humidity/config", FIRMWARE_PREFIX, identifier);
-  snprintf(MQTT_TOPIC_AUTOCONF_FAN, 127, "homeassistant/fan/%s/%s_fan/config", FIRMWARE_PREFIX, identifier);
+  snprintf(MQTT_TOPIC_AUTOCONF_WIFI_SENSOR, 127, "homeassistant/sensor/%s/%s_wifi/config", FIRMWARE_PREFIX, identifier);
 
+  snprintf(MQTT_TOPIC_AUTOCONF_POWER_SWITCH, 127, "homeassistant/switch/%s/%s_power/config", FIRMWARE_PREFIX, identifier);
+  snprintf(MQTT_TOPIC_AUTOCONF_FAN, 127, "homeassistant/fan/%s/%s_fan/config", FIRMWARE_PREFIX, identifier);
+  snprintf(MQTT_TOPIC_AUTOCONF_MODE, 127, "homeassistant/fan/%s/%s_mode/config", FIRMWARE_PREFIX, identifier);
+  snprintf(MQTT_TOPIC_AUTOCONF_SETPOINT, 127, "homeassistant/fan/%s/%s_setpoint/config", FIRMWARE_PREFIX, identifier);
 
 
   WiFi.hostname(identifier);
 
   loadConfig();
+
   setupWifi();
+  setupOTA();
   mqttClient.setServer(mqtt_server, 1883);
   mqttClient.setKeepAlive(10);
   mqttClient.setBufferSize(2048);
@@ -84,8 +101,38 @@ void setup() {
   mqttReconnect();
 }
 
+void setupOTA() {
+
+  ArduinoOTA.onStart([]() {
+    //Serial.println("Start");
+  });
+  ArduinoOTA.onEnd([]() {
+    //Serial.println("\nEnd");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    //Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    /*
+      Serial.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+    */
+  });
+
+  ArduinoOTA.setHostname(identifier);
+
+  //This is less of a security measure and more a accidential flash prevention
+  ArduinoOTA.setPassword(identifier);
+  ArduinoOTA.begin();
+}
+
 
 void loop() {
+  ArduinoOTA.handle();
   handleUart();
   mqttClient.loop();
 
@@ -156,8 +203,14 @@ boolean isMqttConnected() {
 }
 
 void publishState() {
-  DynamicJsonDocument stateJson(256);
+  DynamicJsonDocument wifiJson(192);
+  DynamicJsonDocument stateJson(604);
   char payload[256];
+
+  wifiJson["ssid"] = WiFi.SSID();
+  wifiJson["ip"] = WiFi.localIP().toString();
+  wifiJson["rssi"] = WiFi.RSSI();
+
   stateJson["state"] = state.powerOn ? "on" : "off";
   stateJson["humiditySetpoint"] = state.humiditySetpoint;
   stateJson["humidityCurrent"] = state.currentHumidity;
@@ -190,6 +243,8 @@ void publishState() {
       break;
   }
 
+  stateJson["wifi"] = wifiJson.as<JsonObject>();
+
   serializeJson(stateJson, payload);
   mqttClient.publish(MQTT_TOPIC_STATE, payload, true);
 }
@@ -211,6 +266,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
         commandJson["humiditySetpoint"].as<byte>()
       );
 
+      getStatus();
     }
   }
 }
@@ -218,6 +274,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 void publishAutoConfig() {
   char mqttPayload[2048];
   DynamicJsonDocument device(256);
+  DynamicJsonDocument autoconfPayload(1024);
   StaticJsonDocument<64> identifiersDoc;
   JsonArray identifiers = identifiersDoc.to<JsonArray>();
 
@@ -227,26 +284,61 @@ void publishAutoConfig() {
   device["manufacturer"] = "Midea Group Co., Ltd.";
   device["model"] = "Generic Dehumidifier";
   device["name"] = identifier;
-  device["sw_version"] = "0.0.1";
+  device["sw_version"] = "Changeme"; //TODO
 
 
-  DynamicJsonDocument humiditySensorAutoconfPayload(512);
+  autoconfPayload["device"] = device.as<JsonObject>();
+  autoconfPayload["availability_topic"] = MQTT_TOPIC_AVAILABILITY;
+  autoconfPayload["state_topic"] = MQTT_TOPIC_STATE;
+  autoconfPayload["name"] = identifier + String(" WiFi");
+  autoconfPayload["value_template"] = "{{value_json.wifi.rssi}}";
+  autoconfPayload["unique_id"] = identifier + String("_wifi");
+  autoconfPayload["unit_of_measurement"] = "dBm";
+  autoconfPayload["json_attributes_topic"] = MQTT_TOPIC_STATE;
+  autoconfPayload["json_attributes_template"] = "{\"ssid\": \"{{value_json.wifi.ssid}}\", \"ip\": \"{{value_json.wifi.ip}}\"}";
+  autoconfPayload["icon"] = "mdi:wifi";
 
-  humiditySensorAutoconfPayload["device"] = device.as<JsonObject>();
-  humiditySensorAutoconfPayload["availability_topic"] = MQTT_TOPIC_AVAILABILITY;
-  humiditySensorAutoconfPayload["state_topic"] = MQTT_TOPIC_STATE;
-  humiditySensorAutoconfPayload["name"] = identifier + String(" Humidity");
-  humiditySensorAutoconfPayload["device_class"] = "humidity";
-  humiditySensorAutoconfPayload["unit_of_measurement"] = "%";
-  humiditySensorAutoconfPayload["value_template"] = "{{value_json.humidityCurrent}}";
-  humiditySensorAutoconfPayload["unique_id"] = identifier + String("_humidity");
+  serializeJson(autoconfPayload, mqttPayload);
+  mqttClient.publish(MQTT_TOPIC_AUTOCONF_WIFI_SENSOR, mqttPayload, true);
 
-  serializeJson(humiditySensorAutoconfPayload, mqttPayload);
+  autoconfPayload.clear();
+
+
+
+  autoconfPayload["device"] = device.as<JsonObject>();
+  autoconfPayload["availability_topic"] = MQTT_TOPIC_AVAILABILITY;
+  autoconfPayload["state_topic"] = MQTT_TOPIC_STATE;
+  autoconfPayload["name"] = identifier + String(" Humidity");
+  autoconfPayload["device_class"] = "humidity";
+  autoconfPayload["unit_of_measurement"] = "%";
+  autoconfPayload["value_template"] = "{{value_json.humidityCurrent}}";
+  autoconfPayload["unique_id"] = identifier + String("_humidity");
+
+  serializeJson(autoconfPayload, mqttPayload);
   mqttClient.publish(MQTT_TOPIC_AUTOCONF_HUMIDITY_SENSOR, mqttPayload, true);
 
+  autoconfPayload.clear();
 
 
-  DynamicJsonDocument fanAutoconfPayload(1024);
+  autoconfPayload["device"] = device.as<JsonObject>();
+  autoconfPayload["availability_topic"] = MQTT_TOPIC_AVAILABILITY;
+  autoconfPayload["state_topic"] = MQTT_TOPIC_STATE;
+  autoconfPayload["command_topic"] = MQTT_TOPIC_COMMAND;
+  autoconfPayload["name"] = identifier + String(" Power");
+  autoconfPayload["value_template"] = "{{value_json.state}}";
+  autoconfPayload["unique_id"] = identifier + String("_power");
+  autoconfPayload["payload_on"] = "{\"state\": \"on\"}";
+  autoconfPayload["payload_off"] = "{\"state\": \"off\"}";
+  autoconfPayload["state_on"] = "on";
+  autoconfPayload["state_off"] = "off";
+  autoconfPayload["icon"] = "mdi:power";
+
+  serializeJson(autoconfPayload, mqttPayload);
+  mqttClient.publish(MQTT_TOPIC_AUTOCONF_POWER_SWITCH, mqttPayload, true);
+
+  autoconfPayload.clear();
+
+
   StaticJsonDocument<64> speedsDoc;
   JsonArray speeds = speedsDoc.to<JsonArray>();
 
@@ -254,27 +346,88 @@ void publishAutoConfig() {
   speeds.add("medium");
   speeds.add("high");
 
-  fanAutoconfPayload["device"] = device.as<JsonObject>();
-  fanAutoconfPayload["availability_topic"] = MQTT_TOPIC_AVAILABILITY;
-  fanAutoconfPayload["state_topic"] = MQTT_TOPIC_STATE;
-  fanAutoconfPayload["name"] = identifier + String(" Fan");
-  fanAutoconfPayload["unique_id"] = identifier + String("_fan");
-  fanAutoconfPayload["state_value_template"] = "{\"state\": \"{{value_json.state}}\"}";
-  fanAutoconfPayload["payload_on"] = "{\"state\": \"on\"}";
-  fanAutoconfPayload["payload_off"] = "{\"state\": \"off\"}";
-  fanAutoconfPayload["command_topic"] = MQTT_TOPIC_COMMAND;
-  fanAutoconfPayload["speeds"] = speeds;
-  fanAutoconfPayload["speed_state_topic"] = MQTT_TOPIC_STATE;
-  fanAutoconfPayload["speed_value_template"] = "{\"fanSpeed\": \"{{value_json.fanSpeed}}\"}";
-  fanAutoconfPayload["speed_command_topic"] = MQTT_TOPIC_COMMAND;
-  fanAutoconfPayload["payload_low_speed"] = "{\"fanSpeed\": \"low\"}";
-  fanAutoconfPayload["payload_medium_speed"] = "{\"fanSpeed\": \"medium\"}";
-  fanAutoconfPayload["payload_high_speed"] = "{\"fanSpeed\": \"high\"}";
-  fanAutoconfPayload["qos"] = 1;
+  autoconfPayload["device"] = device.as<JsonObject>();
+  autoconfPayload["availability_topic"] = MQTT_TOPIC_AVAILABILITY;
+  autoconfPayload["name"] = identifier + String(" Fan");
+  autoconfPayload["unique_id"] = identifier + String("_fan");
 
+  autoconfPayload["state_topic"] = MQTT_TOPIC_STATE;
+  autoconfPayload["command_topic"] = MQTT_TOPIC_COMMAND;
+  autoconfPayload["state_value_template"] = "{\"state\": \"{{value_json.state}}\"}";
+  autoconfPayload["payload_on"] = "{\"state\": \"on\"}";
+  autoconfPayload["payload_off"] = "{\"state\": \"off\"}";
 
-  serializeJson(fanAutoconfPayload, mqttPayload);
+  autoconfPayload["preset_modes"] = speeds;
+  autoconfPayload["preset_mode_state_topic"] = MQTT_TOPIC_STATE;
+  autoconfPayload["preset_mode_command_topic"] = MQTT_TOPIC_COMMAND;
+  autoconfPayload["preset_mode_value_template"] = "{{value_json.fanSpeed}}";
+  autoconfPayload["preset_mode_command_template"] = "{\"fanSpeed\": \"{{value}}\"}";
+
+  serializeJson(autoconfPayload, mqttPayload);
   mqttClient.publish(MQTT_TOPIC_AUTOCONF_FAN, mqttPayload, true);
 
+  autoconfPayload.clear();
 
+  StaticJsonDocument<64> modesDoc;
+  JsonArray modes = modesDoc.to<JsonArray>();
+
+  modes.add("setpoint");
+  modes.add("continuous");
+  modes.add("smart");
+  modes.add("clothesDrying");
+
+  autoconfPayload["device"] = device.as<JsonObject>();
+  autoconfPayload["availability_topic"] = MQTT_TOPIC_AVAILABILITY;
+  autoconfPayload["name"] = identifier + String(" Mode");
+  autoconfPayload["unique_id"] = identifier + String("_mode");
+  autoconfPayload["icon"] = "mdi:format-list-checkbox";
+
+
+  autoconfPayload["state_topic"] = MQTT_TOPIC_STATE;
+  autoconfPayload["command_topic"] = MQTT_TOPIC_COMMAND;
+  autoconfPayload["state_value_template"] = "{\"state\": \"{{value_json.state}}\"}";
+  autoconfPayload["payload_on"] = "{\"state\": \"on\"}";
+  autoconfPayload["payload_off"] = "{\"state\": \"off\"}";
+
+
+
+  autoconfPayload["preset_modes"] = modes;
+  autoconfPayload["preset_mode_state_topic"] = MQTT_TOPIC_STATE;
+  autoconfPayload["preset_mode_command_topic"] = MQTT_TOPIC_COMMAND;
+  autoconfPayload["preset_mode_value_template"] = "{{value_json.mode}}";
+  autoconfPayload["preset_mode_command_template"] = "{\"mode\": \"{{value}}\"}";
+
+
+  serializeJson(autoconfPayload, mqttPayload);
+  mqttClient.publish(MQTT_TOPIC_AUTOCONF_MODE, mqttPayload, true);
+
+  autoconfPayload.clear();
+
+
+
+  autoconfPayload["device"] = device.as<JsonObject>();
+  autoconfPayload["availability_topic"] = MQTT_TOPIC_AVAILABILITY;
+  autoconfPayload["name"] = identifier + String(" Setpoint");
+  autoconfPayload["unique_id"] = identifier + String("_setpoint");
+  autoconfPayload["icon"] = "mdi:water-check";
+
+
+  autoconfPayload["state_topic"] = MQTT_TOPIC_STATE;
+  autoconfPayload["command_topic"] = MQTT_TOPIC_COMMAND;
+  autoconfPayload["state_value_template"] = "{\"state\": \"{{value_json.state}}\"}";
+  autoconfPayload["payload_on"] = "{\"state\": \"on\"}";
+  autoconfPayload["payload_off"] = "{\"state\": \"off\"}";
+
+
+
+  autoconfPayload["percentage_state_topic"] = MQTT_TOPIC_STATE;
+  autoconfPayload["percentage_command_topic"] = MQTT_TOPIC_COMMAND;
+  autoconfPayload["percentage_value_template"] = "{{value_json.humiditySetpoint | int}}";
+  autoconfPayload["percentage_command_template"] = "{\"humiditySetpoint\": {{value | int}}}";
+
+
+  serializeJson(autoconfPayload, mqttPayload);
+  mqttClient.publish(MQTT_TOPIC_AUTOCONF_SETPOINT, mqttPayload, true);
+
+  autoconfPayload.clear();
 }
