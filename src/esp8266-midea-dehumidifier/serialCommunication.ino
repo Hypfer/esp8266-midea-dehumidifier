@@ -8,7 +8,7 @@ byte getStatusCommand[21] = {
 };
 byte setStatusCommand[25];
 
-boolean parseState() {
+void parseState() {
   state.powerOn = serialRxBuf[11] & 0x01 > 0;
   state.mode = (dehumMode_t)(serialRxBuf[12] & 0x0f);
   state.fanSpeed = (fanSpeed_t)(serialRxBuf[13] & 0x7f);
