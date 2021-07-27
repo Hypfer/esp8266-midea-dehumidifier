@@ -9,6 +9,7 @@
 #include <PubSubClient.h>
 //#include <SoftwareSerial.h>
 #include <ArduinoOTA.h>
+#include <FS.h>
 
 dehumidifierState_t state;
 
