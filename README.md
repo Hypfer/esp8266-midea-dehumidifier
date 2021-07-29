@@ -103,7 +103,7 @@ having multiple `fan.mqtt` entities (Fan Speed, Mode, Setpoint).
 
 This will hopefully change in the future.
 
-Until then as well as if you're using something else than Home Assistant, you can of course also control it by manually sending
+Until then as well as if you're using something else other than Home Assistant, you can of course also control it by manually sending
 JSONs to the command mqtt topic of the unit:
 ```
 esp8266-midea-dehumidifier/DEHUMIDIFIER-FFFFFF/command
