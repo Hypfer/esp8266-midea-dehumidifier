@@ -33,6 +33,7 @@ This means an alternative is to hook up directly to this serial interface and by
 ## Compatibility list
 This list contains all tested and known-working dehumidifiers:
 
+* Midea MAD22S1WWT
 * Comfee MDDF-20DEN7-WF
 * Inventor Eva II PRO WI-FI
 
