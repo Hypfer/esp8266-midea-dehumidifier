@@ -6,8 +6,7 @@
 This repo contains software to build a replacement wifi adapter for your wifi-enabled midea dehumidifier
 which enables cloud-free operation utilizing MQTT.
 
-Home Assistant Autodiscovery is supported, albeit not including the `humidifier` part, since there's no `humidifier.mqtt`
-integration yet.
+Home Assistant Autodiscovery for all features is supported since Home Assistant 2021.08.
 Furthermore, the WifiManager library is used for on-the-fly configuration.
 Also, ArduinoOTA is used, so that firmware updates are possible even with a reassembled device.
 
@@ -99,12 +98,7 @@ This also deletes the config and opens up the initial configuration Access Point
 ### Controlling the Appliance
 Since we're using the Home Assistant Autodiscovery feature, everything should just work™.
 
-Do note that as of Home Assistant 0.115 there's no `humidifier.mqtt` component, which means, that control is done by
-having multiple `fan.mqtt` entities (Fan Speed, Mode, Setpoint).
-
-This will hopefully change in the future.
-
-Until then as well as if you're using something else other than Home Assistant, you can of course also control it by manually sending
+If you're using something else other than Home Assistant, you can of course also control it by manually sending
 JSONs to the command mqtt topic of the unit:
 ```
 esp8266-midea-dehumidifier/DEHUMIDIFIER-FFFFFF/command
