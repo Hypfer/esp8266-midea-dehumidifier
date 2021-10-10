@@ -35,6 +35,7 @@ This list contains all tested and known-working dehumidifiers:
 * Midea MAD22S1WWT
 * Comfee MDDF-20DEN7-WF
 * Inventor Eva II PRO WI-FI
+* Inventor EVA ION PRO WiFi 20L
 
 ## Health and Safety
 Please note that some of the supported dehumidifiers such as the Comfee MDDF-20DEN7-WF use R290 as its coolant which - [while having a much lower global warming potential than other coolants](https://en.wikipedia.org/wiki/Refrigerant#Environmental_issues) -
