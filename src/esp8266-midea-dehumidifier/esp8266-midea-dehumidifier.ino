@@ -46,6 +46,7 @@ char MQTT_TOPIC_AUTOCONF_HUMIDITY_SENSOR[128];
 
 char MQTT_TOPIC_AUTOCONF_FAN[128];
 char MQTT_TOPIC_AUTOCONF_HUMIDIFIER[128];
+char MQTT_TOPIC_AUTOCONF_IONISER[128];
 
 
 
@@ -65,6 +66,7 @@ void setup() {
   state.mode = setpoint;
   state.humiditySetpoint = 55;
   state.currentHumidity = 45;
+  state.ion = false;
   state.errorCode = 0;
 
   delay(3000);
@@ -81,7 +83,7 @@ void setup() {
 
   snprintf(MQTT_TOPIC_AUTOCONF_FAN, 127, "homeassistant/fan/%s/%s_fan/config", FIRMWARE_PREFIX, identifier);
   snprintf(MQTT_TOPIC_AUTOCONF_HUMIDIFIER, 127, "homeassistant/humidifier/%s/%s_dehumidifier/config", FIRMWARE_PREFIX, identifier);
-
+  snprintf(MQTT_TOPIC_AUTOCONF_IONISER, 127, "homeassistant/switch/%s/%s_ioniser/config", FIRMWARE_PREFIX, identifier);
 
   WiFi.hostname(identifier);
 
@@ -210,6 +212,7 @@ void publishState() {
   stateJson["state"] = state.powerOn ? "on" : "off";
   stateJson["humiditySetpoint"] = state.humiditySetpoint;
   stateJson["humidityCurrent"] = state.currentHumidity;
+  stateJson["ion"] = state.ion ? "on" : "off";
   stateJson["errorCode"] = state.errorCode;
 
   switch (state.fanSpeed) {
@@ -259,7 +262,8 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
         commandJson["state"].as<String>(),
         commandJson["mode"].as<String>(),
         commandJson["fanSpeed"].as<String>(),
-        commandJson["humiditySetpoint"].as<byte>()
+        commandJson["humiditySetpoint"].as<byte>(),
+        commandJson["ion"].as<String>()
       );
 
       getStatus();
@@ -381,6 +385,26 @@ void publishAutoConfig() {
 
   serializeJson(autoconfPayload, mqttPayload);
   mqttClient.publish(MQTT_TOPIC_AUTOCONF_HUMIDIFIER, mqttPayload, true);
+
+  autoconfPayload.clear();
+
+  //Ioniser
+  autoconfPayload["device"] = device.as<JsonObject>();
+  autoconfPayload["availability_topic"] = MQTT_TOPIC_AVAILABILITY;
+  autoconfPayload["name"] = identifier + String(" Ioniser");
+  autoconfPayload["unique_id"] = identifier + String("_ioniser");
+
+  autoconfPayload["state_topic"] = MQTT_TOPIC_STATE;
+  autoconfPayload["command_topic"] = MQTT_TOPIC_COMMAND;
+
+  autoconfPayload["value_template"] = "{{value_json.ion}}";
+  autoconfPayload["payload_on"] = "{\"ion\": \"on\"}";
+  autoconfPayload["payload_off"] = "{\"ion\": \"off\"}";
+  autoconfPayload["state_on"] = "on";
+  autoconfPayload["state_off"] = "off";
+
+  serializeJson(autoconfPayload, mqttPayload);
+  mqttClient.publish(MQTT_TOPIC_AUTOCONF_IONISER, mqttPayload, true);
 
   autoconfPayload.clear();
 }
