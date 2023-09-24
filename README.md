@@ -33,10 +33,14 @@ This means an alternative is to hook up directly to this serial interface and by
 This list contains all tested and known-working dehumidifiers:
 
 * Midea MAD22S1WWT
-* Comfee MDDF-20DEN7 and Comfee MDDF-20DEN7-WF
+* Comfee MDDF-20DEN7-WF
 * Inventor Eva II PRO WI-FI
 * Inventor EVA ION PRO WiFi 20L
 * Midea Cube 20 ([#22](https://github.com/Hypfer/esp8266-midea-dehumidifier/issues/22))
+
+These have also been tested and work but have some issues to be aware of :
+
+* Comfee MDDF-20DEN7 - no Wi-Fi Button meaning no way of reconfiguring Wi-Fi without disassembly and module reflashing
 
 ## Health and Safety
 Please note that some of the supported dehumidifiers such as the Comfee MDDF-20DEN7-WF use R290 as its coolant which - [while having a much lower global warming potential than other coolants](https://en.wikipedia.org/wiki/Refrigerant#Environmental_issues) -
