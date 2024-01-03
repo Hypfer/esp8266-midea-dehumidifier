@@ -38,6 +38,10 @@ This list contains all tested and known-working dehumidifiers:
 * Inventor EVA ION PRO WiFi 20L
 * Midea Cube 20 ([#22](https://github.com/Hypfer/esp8266-midea-dehumidifier/issues/22))
 
+Additionally, there are models that technically also work but have some issues:
+
+* Comfee MDDF-20DEN7 - lacks Wi-Fi Button and USB port. The guide below doesn't fully apply! ([#24](https://github.com/Hypfer/esp8266-midea-dehumidifier/pull/24))
+
 ## Health and Safety
 Please note that some of the supported dehumidifiers such as the Comfee MDDF-20DEN7-WF use R290 as its coolant which - [while having a much lower global warming potential than other coolants](https://en.wikipedia.org/wiki/Refrigerant#Environmental_issues) -
 is also **Propane**.

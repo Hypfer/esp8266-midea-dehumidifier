@@ -82,7 +82,7 @@ void setup() {
   snprintf(MQTT_TOPIC_AUTOCONF_ERROR_SENSOR, 127, "homeassistant/sensor/%s/%s_error/config", FIRMWARE_PREFIX, identifier);
 
 
-  snprintf(MQTT_TOPIC_AUTOCONF_FAN, 127, "homeassistant/fan/%s/%s_fan/config", FIRMWARE_PREFIX, identifier);
+  snprintf(MQTT_TOPIC_AUTOCONF_FAN, 127, "homeassistant/select/%s/%s_fan/config", FIRMWARE_PREFIX, identifier);
   snprintf(MQTT_TOPIC_AUTOCONF_HUMIDIFIER, 127, "homeassistant/humidifier/%s/%s_dehumidifier/config", FIRMWARE_PREFIX, identifier);
 
 
@@ -283,13 +283,13 @@ void publishAutoConfig() {
   device["manufacturer"] = "Midea Group Co., Ltd.";
   device["model"] = "Generic Dehumidifier";
   device["name"] = identifier;
-  device["sw_version"] = "2021.08.0";
+  device["sw_version"] = "2023.08.0";
 
 
   autoconfPayload["device"] = device.as<JsonObject>();
   autoconfPayload["availability_topic"] = MQTT_TOPIC_AVAILABILITY;
   autoconfPayload["state_topic"] = MQTT_TOPIC_STATE;
-  autoconfPayload["name"] = identifier + String(" WiFi");
+  autoconfPayload["name"] = "WiFi";
   autoconfPayload["value_template"] = "{{value_json.wifi.rssi}}";
   autoconfPayload["unique_id"] = identifier + String("_wifi");
   autoconfPayload["unit_of_measurement"] = "dBm";
@@ -306,7 +306,7 @@ void publishAutoConfig() {
   autoconfPayload["device"] = device.as<JsonObject>();
   autoconfPayload["availability_topic"] = MQTT_TOPIC_AVAILABILITY;
   autoconfPayload["state_topic"] = MQTT_TOPIC_STATE;
-  autoconfPayload["name"] = identifier + String(" Humidity");
+  autoconfPayload["name"] = "Humidity";
   autoconfPayload["device_class"] = "humidity";
   autoconfPayload["unit_of_measurement"] = "%";
   autoconfPayload["value_template"] = "{{value_json.humidityCurrent}}";
@@ -332,26 +332,27 @@ void publishAutoConfig() {
   autoconfPayload.clear();
 
 
-  StaticJsonDocument<64> speedsDoc;
-  JsonArray speeds = speedsDoc.to<JsonArray>();
+  StaticJsonDocument<64> optionsDoc;
+  JsonArray speedOptions = optionsDoc.to<JsonArray>();
 
-  speeds.add("low");
-  speeds.add("medium");
-  speeds.add("high");
+  speedOptions.add("low");
+  speedOptions.add("medium");
+  speedOptions.add("high");
 
   autoconfPayload["device"] = device.as<JsonObject>();
   autoconfPayload["availability_topic"] = MQTT_TOPIC_AVAILABILITY;
-  autoconfPayload["name"] = identifier + String(" Fan");
+  autoconfPayload["name"] = "Fan";
   autoconfPayload["unique_id"] = identifier + String("_fan");
+  autoconfPayload["icon"] = "mdi:fan";
 
   autoconfPayload["state_topic"] = MQTT_TOPIC_STATE;
   autoconfPayload["command_topic"] = MQTT_TOPIC_COMMAND;
 
-  autoconfPayload["preset_modes"] = speeds;
-  autoconfPayload["preset_mode_state_topic"] = MQTT_TOPIC_STATE;
-  autoconfPayload["preset_mode_command_topic"] = MQTT_TOPIC_COMMAND;
-  autoconfPayload["preset_mode_value_template"] = "{{value_json.fanSpeed}}";
-  autoconfPayload["preset_mode_command_template"] = "{\"fanSpeed\": \"{{value}}\"}";
+  autoconfPayload["options"] = speedOptions;
+  autoconfPayload["state_topic"] = MQTT_TOPIC_STATE;
+  autoconfPayload["command_topic"] = MQTT_TOPIC_COMMAND;
+  autoconfPayload["value_template"] = "{{value_json.fanSpeed}}";
+  autoconfPayload["command_template"] = "{\"fanSpeed\": \"{{value}}\"}";
 
   serializeJson(autoconfPayload, mqttPayload);
   mqttClient.publish(MQTT_TOPIC_AUTOCONF_FAN, mqttPayload, true);
@@ -361,7 +362,7 @@ void publishAutoConfig() {
 
   autoconfPayload["device"] = device.as<JsonObject>();
   autoconfPayload["availability_topic"] = MQTT_TOPIC_AVAILABILITY;
-  autoconfPayload["name"] = identifier + String(" Dehumidifier");
+  autoconfPayload["name"] = "Dehumidifier";
   autoconfPayload["unique_id"] = identifier + String("_dehumidifier");
   autoconfPayload["device_class"] = "dehumidifier";
 
