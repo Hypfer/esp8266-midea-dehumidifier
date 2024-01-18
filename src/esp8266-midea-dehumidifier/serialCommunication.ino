@@ -12,9 +12,9 @@ void parseState() {
   state.powerOn = serialRxBuf[11] & 0x01 > 0;
   state.mode = (dehumMode_t)(serialRxBuf[12] & 0x0f);
   state.fanSpeed = (fanSpeed_t)(serialRxBuf[13] & 0x7f);
-
   state.humiditySetpoint = serialRxBuf[17] >= 100 ? 99 : serialRxBuf[17];
   state.currentHumidity = serialRxBuf[26];
+  state.ion = serialRxBuf[19] == 0x40;
   state.errorCode = serialRxBuf[31];
 
   clearRxBuf();
@@ -68,13 +68,14 @@ void writeHeader(byte msgType, byte agreementVersion, byte packetLength) {
   currentHeader[9] = msgType;
 }
 
-void handleStateUpdateRequest(String requestedState, String mode, String fanSpeed, byte humiditySetpoint) {
+void handleStateUpdateRequest(String requestedState, String mode, String fanSpeed, byte humiditySetpoint, String ion) {
   dehumidifierState_t newState;
 
   newState.powerOn = state.powerOn;
   newState.mode = state.mode;
   newState.fanSpeed = state.fanSpeed;
   newState.humiditySetpoint = state.humiditySetpoint;
+  newState.ion = state.ion;
 
   if (requestedState == "on") {
     newState.powerOn = true;
@@ -104,17 +105,26 @@ void handleStateUpdateRequest(String requestedState, String mode, String fanSpee
     newState.humiditySetpoint = humiditySetpoint;
   }
 
+  if (ion == "on"){
+    newState.ion = true;
+  }
+  if (ion == "off"){
+    newState.ion = false;
+  }
+
   if ( //Only send if we have updates
     newState.powerOn != state.powerOn ||
     newState.mode != state.mode ||
     newState.fanSpeed != state.fanSpeed ||
-    newState.humiditySetpoint != state.humiditySetpoint
+    newState.humiditySetpoint != state.humiditySetpoint ||
+    newState.ion != state.ion
   ) {
     updateSetStatus(
       newState.powerOn,
       newState.mode,
       newState.fanSpeed,
-      newState.humiditySetpoint
+      newState.humiditySetpoint,
+      newState.ion
     );
     sendSetStatus();
 
@@ -124,6 +134,7 @@ void handleStateUpdateRequest(String requestedState, String mode, String fanSpee
     state.mode = newState.mode;
     state.fanSpeed = newState.fanSpeed;
     state.humiditySetpoint = newState.humiditySetpoint;
+    state.ion = newState.ion;
     delay(30);
   }
 }
@@ -132,7 +143,7 @@ void sendSetStatus() {
   sendMessage(0x02, 0x03, 25, setStatusCommand);
 }
 
-void updateSetStatus(boolean powerOn, dehumMode_t dehumMode, fanSpeed_t fanSpeed, byte humiditySetpoint) {
+void updateSetStatus(boolean powerOn, dehumMode_t dehumMode, fanSpeed_t fanSpeed, byte humiditySetpoint, boolean ion) {
   memset(setStatusCommand, 0, sizeof(setStatusCommand));
 
   setStatusCommand[0] = 0x48; //Magic
@@ -140,6 +151,7 @@ void updateSetStatus(boolean powerOn, dehumMode_t dehumMode, fanSpeed_t fanSpeed
   setStatusCommand[2] = (byte)(dehumMode & 0x0f);
   setStatusCommand[3] = (byte)fanSpeed;
   setStatusCommand[7] = humiditySetpoint;
+  setStatusCommand[9] = ion ? 0x40 : 0x00;
 }
 
 void updateAndSendNetworkStatus(boolean isConnected) {
