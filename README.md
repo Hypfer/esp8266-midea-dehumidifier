@@ -37,6 +37,7 @@ This list contains all tested and known-working dehumidifiers:
 * Inventor Eva II PRO WI-FI
 * Inventor EVA ION PRO WiFi 20L
 * Midea Cube 20 ([#22](https://github.com/Hypfer/esp8266-midea-dehumidifier/issues/22))
+* Midea Cube 35 ([#29](https://github.com/Hypfer/esp8266-midea-dehumidifier/issues/29))
 * Midea Cube 50 ([#27](https://github.com/Hypfer/esp8266-midea-dehumidifier/issues/27))
 
 Additionally, there are models that technically also work but have some issues:
