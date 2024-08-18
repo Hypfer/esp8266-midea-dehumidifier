@@ -41,9 +41,17 @@ This list contains all tested and known-working dehumidifiers:
 * Midea Cube 35 ([#29](https://github.com/Hypfer/esp8266-midea-dehumidifier/issues/29))
 * Midea Cube 50 ([#27](https://github.com/Hypfer/esp8266-midea-dehumidifier/issues/27))
 
-Additionally, there are models that technically also work but have some issues:
+### Extended compatibility list
+Additionally, there are models that technically also work with some limitations.
 
-* Comfee MDDF-20DEN7 - lacks Wi-Fi Button and USB port. The guide below doesn't fully apply! ([#24](https://github.com/Hypfer/esp8266-midea-dehumidifier/pull/24))
+#### Devices without Wi-Fi Button and USB port, but with Wi-Fi headers
+These devices lack a dedicated Wi-Fi button, so resetting the Wi-Fi is only possible by reflashing.
+Furthermore these devices lack a USB port, instead the `WiFi` header on the PCB needs to be used.
+Upper (right) pin of the `WiFi` header is `Gnd`, lower (left) pin is `Vcc`, the `Rx` and `Tx` are between these two.
+See [#24](https://github.com/Hypfer/esp8266-midea-dehumidifier/pull/24) for further info.
+
+* Comfee MDDF-20DEN7
+* Comfee MDDP-50DEN7 
 
 ## Health and Safety
 Please note that some of the supported dehumidifiers such as the Comfee MDDF-20DEN7-WF use R290 as its coolant which - [while having a much lower global warming potential than other coolants](https://en.wikipedia.org/wiki/Refrigerant#Environmental_issues) -
