@@ -17,5 +17,6 @@ struct dehumidifierState_t {
   fanSpeed_t fanSpeed;
   byte humiditySetpoint;
   byte currentHumidity;
+  boolean ion;
   byte errorCode;
 };
